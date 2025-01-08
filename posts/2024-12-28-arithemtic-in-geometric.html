@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="../css/default.css" />
+        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </head>
+    <div id="content-wrapper">
+        <body>
+            <style>
+	.thm-box{
+		padding: 0.75em; 
+		border-style: solid;
+		border-width: 1px;
+		margin: 20px 0px;
+	}
+
+	.code-box{
+		margin-top: 10px;
+	}
+</style>
+<h1 id="fitting-arithmetic-progressions-into-geometric-progressions">Fitting arithmetic progressions into geometric progressions</h1>
+<h4 id="by-srivatsa-chakravrathy-srinivas">by Srivatsa Chakravrathy Srinivas</h4>
+<p>This post aims to use a novel method using the package Haskell package <a href="https://hackage.haskell.org/package/sbv">SBV</a> to solve an easy to state, but tricky problem.</p>
+<div class="thm-box">
+<p><strong>Question.</strong> What is the longest non-trivial arithmetic progression that is a subset of a geometric progession?</p>
+</div>
+<p>This was an open question of K. Zarankiewicz which was solved by Schinzel in <a href="https://www.infona.pl/resource/bwmeta1.element.bwnjournal-article-cmv9i1p291bwm">1962</a>. In this article, we re-write the tedious calculations in a Haskell program and extend the proof in the original article to extra cases. In order to formalize the question we first define a few notions</p>
+<div class="thm-box">
+<strong>Definitions:</strong>
+<ul>
+<li style="margin: 20px 0;">
+An <strong>arithemtic progression</strong> of length <span class="math inline">\(k &gt; 0\)</span> is a sequence of <span class="math inline">\(k+1\)</span> elements <span class="math inline">\(\xi_i \in \mathbb{C}\)</span> such that for all <span class="math inline">\(2 \leq i \leq k\)</span> we have that <span class="math inline">\(\xi_{i+1} - \xi_i = \xi_i - \xi_{i-1}\)</span>. It is <strong>non-trivial</strong> if <span class="math inline">\(\xi_2 - \xi_1 \neq 0\)</span>
+</li>
+<li>
+A <strong>geometric progression</strong> of length <span class="math inline">\(k &gt; 0\)</span> is a sequence of <span class="math inline">\(k+1\)</span> elements <span class="math inline">\(\xi_i \in \mathbb{C}\)</span> such that for all <span class="math inline">\(2 \leq i \leq k\)</span> we have that <span class="math inline">\(\xi_{i+1}/\xi_i = \xi_i/\xi_{i-1}\)</span>.
+</li>
+<li style="margin: 20px 0;">
+We define <span class="math inline">\(\boldsymbol{P(k)}\)</span> to be the following statement: <span class="math inline">\(\exists\)</span> an arithmetic progression of length <span class="math inline">\(k\)</span>, <span class="math inline">\([\xi_1, \ldots, \xi_{k+1}]\)</span>, and a geometric progression of length <span class="math inline">\(r\)</span>, <span class="math inline">\([\rho_1, \ldots, \rho_{r+1}]\)</span>, such that the set of terms in the aforementioned arithmetic progession are a subset of the terms of the aforementioned geometric sequence, ie <span class="math inline">\(\{\xi_i\} \subset \{\rho_i\}\)</span>
+</li>
+<li style="margin: 20px 0;">
+For <span class="math inline">\(l,m,n \in \mathbb{N}_{\geq 0}\)</span> we define <span class="math inline">\(p_{l,m,n} = x^l - 2x^m + x^n \in \mathbb{Z}[x]\)</span>
+</ul>
+</div>
+<p>The question can be reframed as the following: What is the largest <span class="math inline">\(k\)</span> such that <span class="math inline">\(P(k)\)</span> is true. It makes sense check some cases where <span class="math inline">\(k\)</span> is small.</p>
+<ul>
+<li>
+Case <span class="math inline">\(k = 1\)</span>: This is the easiest case. Take the geometric and arithmetic progression to be the sequence <span class="math inline">\([2,4]\)</span><br />
+
+</li>
+<li>
+Case <span class="math inline">\(k = 2\)</span>. This case is slightly more difficult. We let <span class="math inline">\(\xi \in \mathbb{C}\)</span> and force <span class="math inline">\(\xi\)</span> to have the following constraints <span class="math display">\[
+	\xi^3 - \xi^1 = \xi^1 - \xi^0
+	\]</span>Then we will have that <span class="math inline">\([1,\xi,\xi^3]\)</span> forms an arithmetic progression of length <span class="math inline">\(2\)</span> that is a subset of the geometric progression <span class="math inline">\([1,\xi,\xi^2,\xi^3]\)</span>. We find all such <span class="math inline">\(\xi\)</span> by solving <span class="math inline">\(x^3 - 2x^2 + 1 = 0\)</span>. The solutions are
+<span class="math display">\[ x = 1, \frac{1+\sqrt{5}}{2}, \frac{1-\sqrt{5}}{2}\]</span>
+Thus if <span class="math inline">\(\xi \neq 1\)</span> and is chosen from above then <span class="math inline">\([1,\xi,\xi^3]\)</span> is a non-trivial arithemtic progression contained in a geometric progression.
+</li>
+<li>
+Case <span class="math inline">\(k = 3\)</span>. Note that <span class="math inline">\(P(3)\)</span> is equivalent to the following: There exists an <span class="math inline">\(\xi \in \mathbb{C}\)</span> and <span class="math inline">\(a,b,c,d \in \mathbb{Z}\)</span> such that <span class="math display">\[x^c - x^b = x^b - x^a\]</span> <span class="math display">\[x^d - x^c = x^c - x^b\]</span>
+Thus we have that <span class="math inline">\([\xi^a,\xi^b,\xi^c,\xi^d]\)</span> is an arithmetic progression iff <span class="math inline">\(\xi\)</span> is a root of the two polynomials <span class="math inline">\(p_{c,b,a}\)</span> and <span class="math inline">\(p_{d,c,b}\)</span>. For the rest of the article we consider Case <span class="math inline">\(k = 3\)</span>.
+</li>
+</ul>
+<div class="thm-box">
+<p><strong>(Longest a.p in a g.p)</strong> If there is an arithemtic progression of length at least <span class="math inline">\(3\)</span> that is a subset of <span class="math inline">\((\xi^i)_{i \in \mathbb{Z}}\)</span> then we have that <span class="math inline">\(\xi = 0\)</span> or <span class="math inline">\(\xi\)</span> is a root of unity (i.e, <span class="math inline">\(\exists m \in \mathbb{N}\)</span> such that <span class="math inline">\(\xi^m = 1\)</span>)</p>
+</div>
+<h2 id="converting-the-problem-to-something-that-a-computer-can-solve">1. Converting the problem to something that a computer can solve</h2>
+We now define the “reverse” of a polynomial.
+<div class="thm-box">
+<p><strong>Definition.</strong> Given a polynomial <span class="math inline">\(p \in \mathbb{Z}[x]\)</span>, we define the <strong>reversal</strong> of <span class="math inline">\(p\)</span> by <span class="math display">\[p^\dagger = x^{\deg p}p(1/x)\]</span></p>
+</div>
+That is if <span class="math display">\[p(x) = \sum_{i = 0}^n a_i x^i\]</span>
+Then <span class="math display">\[p^\dagger(x) = \sum_{i = 0}^n a_{n-i}x^i\]</span>
+We note that the reversal has the following property: <span class="math inline">\((pq)^\dagger = p^\dagger q^\dagger\)</span>. Thus we have the following lemma
+<div class="thm-box">
+<strong>Lemma.</strong> <span class="math inline">\(p\)</span> is an irreducible polynomial iff <span class="math inline">\(p^\dagger\)</span> is an irreducible polynomial
+</div>
+We will now present a Lemma that will allow us to factor <span class="math inline">\(p_{a,b,c}(x)\)</span>
+<div class="thm-box">
+<ul>
+<li style="margin: 20px 0px">
+<strong>Definition.</strong> A polynomial <span class="math inline">\(p \in \mathbb{Z}[x]\)</span> is said to be <strong>uniquely positive</strong> if for every <span class="math inline">\(q \in \mathbb{Z}[x]\)</span> such that <span class="math inline">\(pp^\dagger = qq^\dagger\)</span> we have that <span class="math inline">\(q = \varepsilon p\)</span> or <span class="math inline">\(q = \varepsilon p^\dagger\)</span>, where <span class="math inline">\(\varepsilon = \pm 1\)</span>
+</li>
+<li style="margin: 20px 0px">
+<strong>Definition.</strong> A polynomial <span class="math inline">\(p \in \mathbb{Z}[x]\)</span> is said to be <strong>symmetric</strong> if <span class="math inline">\(p = p^\dagger\)</span>. The <strong>symmetric part</strong>, s, of a polynomial <span class="math inline">\(p\)</span> is the maximal symmetric divisor of <span class="math inline">\(p\)</span>. We define the <strong>antisymmetric</strong> part of <span class="math inline">\(p\)</span> to be <span class="math inline">\(p/s\)</span>.
+</li>
+<li style="margin: 20px 0px">
+<strong>Lemma (Uniquely positive form).</strong> A polynomial <span class="math inline">\(p \in \mathbb{Z}[x]\)</span> is uniquely positive iff it can be written as <span class="math inline">\(p = sf\)</span> where <span class="math inline">\(s = s^\dagger\)</span>, <span class="math inline">\(f\)</span> is irreducible and <span class="math inline">\(f \neq f^\dagger\)</span> or <span class="math inline">\(f = 1\)</span>
+</li>
+<ul>
+</div>
+<div>
+<p><strong>Proof (Uniquely positive form)</strong> We write <span class="math inline">\(p = \pi_1 \cdots \pi_n\)</span> where <span class="math inline">\(\pi_i\)</span> are irreducible and <span class="math inline">\(\pi_1 , \ldots, \pi_k\)</span> are symmetric. If <span class="math inline">\(k \leq n-2\)</span> then we have that on setting <span class="math inline">\(p_1 = \pi_1\cdots \pi_{n-2} \pi_{n-1} \pi_n^\dagger\)</span>, we note that <span class="math inline">\(p_1 \neq p\)</span> but <span class="math inline">\(p_1p_1^\dagger = pp^\dagger\)</span>. Thus if <span class="math inline">\(p\)</span> is to be uniquely symettric then we have that <span class="math inline">\(k \geq n-1\)</span> and so <span class="math inline">\(p = sf\)</span> where <span class="math inline">\(s\)</span> is symmetric and <span class="math inline">\(f\)</span> is irreducible. We note that if <span class="math inline">\(q = \mu_1 \cdots \mu_l\)</span> where <span class="math inline">\(\mu_i\)</span> are irreducible, then we have that <span class="math inline">\(pp^\dagger = \pm qq^\dagger\)</span> if and only if <span class="math inline">\(l = n\)</span> and there is a permuations <span class="math inline">\(\sigma\)</span> of <span class="math inline">\(\{1,\ldots,n\}\)</span> such that for all <span class="math inline">\(i\)</span> we have that either <span class="math inline">\(\pi_i = \pm \mu_{\sigma(i)}\)</span> or <span class="math inline">\(\pi_i = \pm \mu_{\sigma(i)}^\dagger\)</span>. Therefore if <span class="math inline">\(p = sf\)</span> where <span class="math inline">\(s\)</span> is symmteric and <span class="math inline">\(f\)</span> is irreducible then we have that for all <span class="math inline">\(i \leq n-1\)</span> we have that <span class="math inline">\(\pi_i = \pm \mu_{\sigma(i)}\)</span>. Therefore the only possiblilites for <span class="math inline">\(q\)</span> are <span class="math inline">\(\pm \pi_1 \cdots \pi_{n-1}\pi_n\)</span> or <span class="math inline">\(\pm \pi_1 \cdots \pi_{n-1}\pi_n^\dagger\)</span>. Thus <span class="math inline">\(q = \pm p\)</span> or <span class="math inline">\(q = \pm p^\dagger\)</span>.</p>
+</div>
+<span class="math inline">\(\blacksquare\)</span>
+<p>
+Thus if we can show that a polynomial is uniquely positive, and we know it’s “symmetric part” (that is the maximal divisor <span class="math inline">\(s\)</span> that satisfies <span class="math inline">\(s = s^\dagger\)</span>). Then we have factorized the polynomial. This will help us factor <span class="math inline">\(p_{a,b,c}\)</span>.
+</p>
+<div class="thm-box">
+<p><strong>Lemma (Symmetric part of <span class="math inline">\(\boldsymbol{p_{a,b,c}}\)</span>).</strong> Let <span class="math inline">\(a,b,c \in \mathbb{N}_{\geq 0}\)</span> be such that <span class="math inline">\(a = b = c\)</span> does not hold. The symmettric part of <span class="math inline">\(p_{a,b,c}\)</span> is <span class="math inline">\(s = x^{e_3}(x^{\gcd(e_1-e_3,e_2-e_3)} - 1)^{e_4}\)</span> where <span class="math inline">\([e_1,e_2,e_3]\)</span> is <span class="math inline">\([a,b,c]\)</span> sorted in descending order and <span class="math inline">\(e_4 = 1\)</span> if <span class="math inline">\(e_1 - e_2 \neq 2(e_2 - e_3)\)</span> and <span class="math inline">\(e_4 = 2\)</span> otherwise</p>
+</div>
+<strong>Proof (Symmetric part of <span class="math inline">\(\boldsymbol{p_{a,b,c}}\)</span>).</strong> Since <span class="math inline">\(x^{e_3}\)</span> is symmetric, we only need to find the symmetric part of <span class="math inline">\(p_{a,b,c}/x^{e_3}\)</span>. We set <span class="math inline">\(p' = p_{a,b,c}/x^{e_3}\)</span>, <span class="math inline">\(n = e_1 - e_3\)</span> and <span class="math inline">\(m = e_2 - e_3\)</span>. Note that <span class="math inline">\(n &gt; m\)</span>. Before we proceed, we would like to mention that the case where <span class="math inline">\(2m = n\)</span> is trivial and hence we may assume that <span class="math inline">\(2m \neq n\)</span>. We can also infer from the hypothesis that <span class="math inline">\(n &gt; 0\)</span>. We first prove the following claim:
+<div style="margin-left:20px;">
+<div class="thm-box">
+<p><strong>Claim.</strong> <span class="math inline">\(\xi\)</span> is a root of the symmetric part of <span class="math inline">\(p'\)</span> iff <span class="math inline">\(\xi\)</span> is a root of <span class="math inline">\(x^{\gcd(m,n)}-1\)</span>. Furthermore the multiplicity of the root <span class="math inline">\(\xi\)</span> in <span class="math inline">\(p'\)</span> is 1.</p>
+</div>
+<strong>Proof of Claim.</strong>
+<ul>
+<li style="margin: 20px 0px">
+<strong>Case</strong> <span class="math inline">\(p' = x^n - 2x^m + 1\)</span>: We know that <span class="math inline">\(p'^\dagger(x) = x^n - 2x^{n-m} + 1\)</span>. Now if <span class="math inline">\(p'(\xi) = p'^\dagger(\xi) = 0\)</span>, we can deduce that <span class="math inline">\(\xi^{n-m} = \xi^{m}\)</span>. Combining this fact with <span class="math inline">\(p'(\xi) = 0\)</span> (writing <span class="math inline">\(n\)</span> as <span class="math inline">\(n-m+m\)</span>) gives us that <span class="math inline">\(\xi^m = 1\)</span>, and <span class="math inline">\(\xi^n = 1\)</span> readily follows after. Thus <span class="math inline">\(\xi\)</span> is a root of <span class="math inline">\(x^{\gcd(m,n)}-1\)</span>. Conversely, every root of <span class="math inline">\(x^{\gcd(m,n)} -1\)</span> is a root of <span class="math inline">\(p'\)</span>. Note that <span class="math inline">\(\frac{dp'}{dx}(\xi) = (n-2m)\xi^{-1} \neq 0\)</span>. Thus we have proven the claim.
+</li>
+<li style="margin: 20px 0px">
+<strong>Case</strong> <span class="math inline">\(p' = -2x^n + x^m + 1\)</span>: In this case <span class="math inline">\(p'^\dagger(x) = x^n + x^{n-m} - 2\)</span>. Let <span class="math inline">\(p'(\xi), p'^\dagger(\xi) = 0\)</span>. If <span class="math inline">\(|\xi| &gt; 1\)</span> then
+<span class="math display">\[
+\begin{aligned}
+	2|\xi|^n &amp;\geq 2|\xi|^m  \\
+	\implies 2|\xi|^n &amp;\geq |\xi|^m + 1 \\
+	\implies 2|\xi|^n &amp;\geq |\xi^m + 1| 
+\end{aligned}
+\]</span>
+Contradicting <span class="math inline">\(p'(\xi) = 0\)</span>. Thus <span class="math inline">\(|\xi| \leq 1\)</span>. Now since, <span class="math inline">\(\xi^n + \xi^m -2 = p'^\dagger(\xi) = 0\)</span>, the triangle inequality implies that <span class="math inline">\(\xi^n = \xi^m = 1\)</span>. And thus, <span class="math inline">\(\xi\)</span> is a root of <span class="math inline">\(x^{\gcd(m,n)} - 1\)</span>. Conversely, every root of <span class="math inline">\(x^{\gcd(m,n)} -1\)</span> is a root of <span class="math inline">\(p'\)</span>. Note that <span class="math inline">\(\frac{dp'}{dx}(\xi) = (m - 2n)\xi^{-1} \neq 0\)</span>. Thus we have proven the claim.
+</li>
+<li style="margin: 20px 0px">
+<strong>Case</strong> <span class="math inline">\(p' = x^n + x^m - 2\)</span>: Since the symmetric part of <span class="math inline">\(p'\)</span> is the same as that of the symettric part of <span class="math inline">\(p'^\dagger = -2x^n + x^{n-m} + 1\)</span>, we have that the every root of the symmetric part of <span class="math inline">\(p'\)</span> is a root of <span class="math inline">\(x^{\gcd(n,n-m)} - 1 = x^{\gcd(m,n)}-1\)</span>. Conversely, every root of <span class="math inline">\(x^{\gcd(m,n)} -1\)</span> is a root of <span class="math inline">\(p'\)</span>. Note that <span class="math inline">\(\frac{dp'}{dx}(\xi) = (n + m)\xi^{-1} \neq 0\)</span> and thus we have proven the claim.
+</li>
+</ul>
+<p><span class="math inline">\(\blacksquare\)</span></p>
+</div>
+The above claim combined gives us that the symmetric part of <span class="math inline">\(p'\)</span> is <span class="math inline">\(x^{\gcd(m,n) - 1}\)</span>. <span class="math inline">\(\blacksquare\)</span>
+<p>
+In order to use the above information to factor <span class="math inline">\(p_{a,b,c}\)</span> we need to prove that <span class="math inline">\(p_{a,b,c}\)</span> is uniquely postive. We can now jump into the realm of computation! (Technically, by the Curry-Howard correspondence, the reader understanding the above proof would also count as computation)
+</p>
+<h2 id="opening-the-floodgates-of-computation">2. Opening the floodgates of computation</h2>
+The following is based on a <a href="https://www.mscand.dk/article/view/10593">trick</a> of Wilhelm Ljunggren. We now define the coefficient operator
+<div class="thm-box">
+<p><strong>Definition.</strong> We define the <strong>coeffcient operator</strong> for an <span class="math inline">\(m \in \mathbb{Z}\)</span> as follows, given any polynomial <span class="math inline">\(p(x) = a_nx^n + \cdots + a_0\)</span> we define
+<span class="math display">\[ [x^m]p(x) = a_m\]</span> where <span class="math inline">\(a_m = 0\)</span> if <span class="math inline">\(m &lt;0\)</span> or <span class="math inline">\(m &gt; n\)</span></p>
+</div>
+<div class="thm-box">
+<p><strong>Lemma.</strong>
+Let <span class="math inline">\(p(x) = a_nx^n + \cdots + a_0\)</span>. Then <span class="math inline">\([x^n] pp^\dagger (x) = \sum_{i = 0}^n a_i^2\)</span></p>
+</div>
+<strong>Proof.</strong>
+<span class="math display">\[ \begin{aligned}
+	{}[x^n]pp^\dagger(x) &amp;= \sum_{\substack{0 \leq i,j \leq n \\i+j = n}} ([x^i]p(x))([x^j]p^\dagger(x)) \\
+	&amp;= \sum_{i = 0}^n a_i(a_{n-(n-i)}) \\
+	&amp;= \sum_{i = 0}^n a_i^2
+	\end{aligned}
+\]</span>
+<span class="math inline">\(\blacksquare\)</span>
+<p>
+Note that if <span class="math inline">\([e_1,e_2,e_3]\)</span> is <span class="math inline">\([a,b,c]\)</span> sorted in descending order then we have that
+<span class="math display">\[
+	[x^{e_3}] p_{a,b,c}p_{a,b,c}^\dagger (x)
+	=
+	\begin{cases}
+		0 &amp; e_3 = e_1 \\
+		2 &amp; e_3 = e_2 \text{ or } e_2 = e_1 \\
+		6 &amp; e_3 &gt; e_2 &gt; e_1 \\
+	\end{cases}
+\]</span>
+In the case <span class="math inline">\(e_3 = e_1\)</span>, <span class="math inline">\(p_{a,b,c}(x) = 0\)</span> and in the case <span class="math inline">\(e_3 = e_2 \, \text{or} \, e_2 = e_1\)</span> we have that <span class="math inline">\(p_{a,b,c}(x) = (-1)^{e_4}(x^{e_3} - x^{e_1})\)</span> where <span class="math inline">\(e_4 = 1\)</span> if <span class="math inline">\(e_3 = e_2\)</span> and <span class="math inline">\(0\)</span> otherwise. Thus the only case that we have not fully factored <span class="math inline">\(p_{a,b,c}\)</span> is when <span class="math inline">\(e_3 &gt; e_2 &gt; e_1\)</span>. The rest of the section will focus on the last case.
+</p>
+<p>
+Thus, the above lemma says that if <span class="math inline">\(qq^\dagger = p_{a,b,c}p_{a,b,c}^\dagger\)</span> then we must have that sum of squares of the coefficients of <span class="math inline">\(q\)</span> must be <span class="math inline">\(6\)</span>. This means that there are at most finitely many possibilities for the coefficients of <span class="math inline">\(q\)</span>. We can now get to work!
+<div class="thm-box">
+<p><strong>Lemma</strong>
+If <span class="math inline">\(b &gt; \max\{a,c\}\)</span> or <span class="math inline">\(b &lt; \min\{a,c\}\)</span> then we have that <span class="math inline">\(p_1 = p_{a,b,c}/x^{\min\{a,b,c\}}\)</span> is uniquely positive</p>
+</div>
+<strong>Proof.</strong> Suppose that <span class="math inline">\(b &gt; \max \{a,c\}\)</span> and <span class="math inline">\(p_1p_1^\dagger = \pm qq^\dagger\)</span> where and <span class="math inline">\(p = p_{a,b,c}\)</span>. Without loss of generality we may assume that <span class="math inline">\(a \leq c\)</span>. Then we must have that <span class="math inline">\(-2 = [x^{2b}]p_1(x)p_1^\dagger(x) = [x^{2b}] q(x)q^\dagger(x) = [x^b]q(x)[x^0]q(x)\)</span>. This means that either <span class="math inline">\([x^0]q(x) = \pm 2\)</span> or <span class="math inline">\([x^b]q(x) = \pm 2\)</span>. In either case, since the square of the coefficients of <span class="math inline">\(q(x)\)</span> have to add to be <span class="math inline">\(6\)</span>, this forces <span class="math inline">\(q(x) = \pm 1(-2x^{b-a} + x^{c-a} + 1)\)</span> or <span class="math inline">\(q(x) = \pm 1(x^{b-a} + x^{c-a} - 2) = p_1^\dagger (x)\)</span>. Thus we have shown that <span class="math inline">\(p_1\)</span> is uniquely positive in the case of <span class="math inline">\(b &gt; \max \{a,c\}\)</span>. In the case of <span class="math inline">\(b &lt; \min \{a,c\}\)</span> we note that <span class="math inline">\(p_1^\dagger\)</span> falls into the previous case, therefore we are done.
+<span class="math inline">\(\blacksquare\)</span>
+<p>
+So the only interesting case is when <span class="math inline">\(a &gt; b &gt; c\)</span>. Let <span class="math inline">\(p_{m,n}(x) = x^n - 2x^m + 1\)</span>, where <span class="math inline">\(n &gt; m\)</span>. Suppose that <span class="math inline">\(qq^\dagger(x) = p_{m,n}p_{m,n}^\dagger(x)\)</span>. Then we know that if <span class="math inline">\(q(x) = \sum_{i = 1}^n a_i x^i\)</span>, it must be that <span class="math inline">\(\sum_{i = 1}^n a_i^2 = 6\)</span>. It is easy to see that if for some <span class="math inline">\(i\)</span> we have that <span class="math inline">\(a_i = \pm 2\)</span> then it must be the case that <span class="math inline">\(q(x) = \pm p_{m,n}(x)\)</span> or <span class="math inline">\(q(x) = \pm p_{m,n}^\dagger(x)\)</span>. Therfore the only interesting case is when <span class="math inline">\(q(x) = \sum_{i = 1}^6 a_ix^{k_1}\)</span> where <span class="math inline">\(a_i = \pm 1\)</span>. We will follow this case for the rest of the article.
+</p>
+<h2 id="putting-the-computation-in-a-computer">3. Putting the computation in a computer</h2>
+<p>We want to find the <span class="math inline">\(a_i,k_i,n,m\)</span> such that <span class="math inline">\(p_{m,n}(x)p_{m,n}^\dagger(x) =  q(x)q^\dagger(x)\)</span> where <span class="math inline">\(p_{m,n} = x^n - 2x^m + 1\)</span>, <span class="math inline">\(q(x) = \sum_{i = 1}^6 a_ix^{k_i}\)</span>, <span class="math inline">\(a_i = \pm 1\)</span> and <span class="math inline">\(m &lt; n\)</span></p>
+<div class="thm-box">
+<strong>Definitions.</strong>
+<ul>
+<li style="margin: 20px 0px">
+An <strong>a_expr</strong> and <strong>b_expr</strong> are defined as follows:
+<pre class="code-box"><code class="language-haskell">a_expr :: symbol 
+	| n ∈ ℤ
+	| a_expr + a_expr
+	| a_expr * a_expr
+b_expr :: True 
+	| False
+	| a_expr < a_expr
+	| a_expr > a_expr
+	| a_expr = a_expr
+	| b_expr && b_expr
+	| b_expr || b_expr
+	| not b_expr
+</code></pre>
+Which means that you build an a_expr using symbols, integers and the operations <span class="math inline">\(+\)</span> and <span class="math inline">\(*\)</span>. A b_expr is built using the values True and False, a_exprs compared using relations and the boolean AND (&amp;&amp;), OR (||). Examples of an a_expr would be <span class="math inline">\(x\)</span>, <span class="math inline">\(1 + y\)</span> and an example of a b_expr is <span class="math inline">\(x &gt; 1+y\)</span>
+</li>
+<li style="margin: 20px 0px">
+A b_expr containing symbols <span class="math inline">\(x_1,\ldots,x_n\)</span>, denoted by <span class="math inline">\(B(x_1,\ldots,x_n)\)</span>, is said to be <strong>satisfiable</strong> if the statement <span class="math inline">\(\exists x_1, \ldots ,x_n \in \mathbb{Z}. B(x_1, \ldots, x_n)\)</span> is True and is said to be <strong>unsatisfiable</strong> otherwise.
+</li>
+<li style="margin: 20px 0px">
+An <strong>integer solver</strong> is a function whose input is a b_expr and whose output is either Nothing, or whether the b_expr is satisfiable or unsatisfiable. It is unfortunately true that determining the satisfiability of a b_expr is <a href="https://en.wikipedia.org/wiki/Hilbert%27s_tenth_problem">undecidable</a>. That is why we allow the solver to “time out” on occasion.
+</li>
+<li style="margin: 20px 0px">
+Given a list of b_exprs <span class="math inline">\(\text{ls} = [B_1(x_{11},\ldots,x_{1n_1}), \ldots, B_m(x_{m1},\ldots,x_{mn_m})]\)</span> we define
+<span class="math display">\[ B_{\text{ls}} := 
+B_1(x_{11},\ldots,x_{1n_1}) \,\&amp;\&amp;\, \ldots \,\&amp;\&amp;\, B_m(x_{m1},\ldots,x_{mn_m})
+\]</span>
+</li>
+<li style="margin: 20px 0px">
+We say that a b_expr, <span class="math inline">\(B(x_1,\ldots,x_n)\)</span> is <strong>provable</strong> if, <span class="math inline">\(\text{not } B(x_1,\ldots,x_n)\)</span> is unsatisfiable. Given a b_expr <span class="math inline">\(B(x_1,\ldots,x_n)\)</span>, and a list of b_exprs <span class="math inline">\(\text{ls}\)</span> we say that <span class="math inline">\(B(x_1,\ldots,x_n)\)</span> is <strong>satisfiable (resp. unsatisfiable, provable) with constraints <span class="math inline">\(\boldsymbol{\text{ls}}\)</span></strong> if <span class="math display">\[B(x_1,\ldots,x_n) \,\, \&amp;\&amp; \,\, B_{\text{ls}}\]</span> is satisfiable (resp. unsatisfiable, provable).
+</li>
+</ul>
+</div>
+<p>
+How can we construct an integer solver? That is a topic for another day! Luckily there are many integer solvers packaged into more general automated problem solvers called <strong>SMT</strong> (Satisfiable Modulo Theory) solvers. The Haskell package <strong>SBV</strong> allows one to construct b_exprs and query an SMT solver to return one of the following: time out, satisifiable or unsatisfiable. We will be using the <strong>cvc5</strong> solver in this project.
+<div class="thm-box">
+<strong>Definitions.</strong>
+<ul>
+<li style="margin:20px 0px">
+A <strong>symbolic polynomial</strong> is a pair <span class="math inline">\((p,\text{ls})\)</span> where <span class="math inline">\(p\)</span> is a list of the form <span class="math inline">\([(a_n,k_n), \ldots, (a_0,k_0)]\)</span> (called the <strong>body</strong>), where the <span class="math inline">\(a_i,k_i\)</span> are b_exprs and <span class="math inline">\(\text{ls}\)</span> is a list of b_exprs that is satisfiable. It said to be in <strong>normal form</strong> if <span class="math inline">\(k_i &lt; k_j\)</span> is provable with constraints <span class="math inline">\(\text{ls}\)</span> for any <span class="math inline">\(i &lt; j\)</span>. We can write a body <span class="math inline">\(p = [(a_i,k_i)]\)</span> in the following notation
+<span class="math display">\[
+\sum_{i = 1}^n a_ix^{k_i}
+\]</span>
+</li>
+<li>
+We say that a symbolic polynomial with body <span class="math inline">\([(a_0,k_0), \ldots, (a_n,k_n)]\)</span> depends on <span class="math inline">\((z_1,\ldots,z_r)\)</span> if we have that any variable that appears in <span class="math inline">\(a_i\)</span> or <span class="math inline">\(k_i\)</span> appears in the tuple <span class="math inline">\((z_1,\ldots,z_r)\)</span>
+</ul>
+</div>
+Given a symbolic polynomial <span class="math inline">\((p,\text{ls})\)</span> that depends on <span class="math inline">\((z_1,\ldots,z_r)\)</span> we want to determine if there are any solutions in <span class="math inline">\((z_1,\ldots,z_r)\)</span> to the equation
+<span class="math display">\[ \exists z_1,\ldots,z_r \in \mathbb{Z}. \, \sum_{i = 1}^n a_{i}x^{k_i} = 0 \]</span>
+with constraints in the constraint list <span class="math inline">\(\text{ls}\)</span>. If <span class="math inline">\((p,\text{ls})\)</span> is in normal form then obviously the above is equivalent to solving for
+<span class="math display">\[ \exists z_1,\ldots,z_r \in \mathbb{Z}. \, \forall 1 \leq i \leq n. a_i = 0 \]</span>
+with constraints <span class="math inline">\(\text{ls}\)</span>. But what if <span class="math inline">\((p,\text{ls})\)</span> is not in normal form? Then, there are multiple possibilities as to how to “collect terms”. For example, <span class="math inline">\(a_1x^{k_1} + a_2x^{k_2}\)</span> is equal to <span class="math inline">\((a_1 + a_2)x^{k_1}\)</span> if the term <span class="math inline">\(k_1 = k_2\)</span> appears in the constraint list. So, how can we know what expressions to equate to 0 in order to determine if a symbolic polynomial can be equal to 0? We construct a term that accomplishes that called <code> checkZeroSat </code> in this <a href="https://github.com/srivatsasrinivasmath/SymbolicPolynomialEquality/blob/master/lib/Blog.hs">repository</a>
+<div class="thm-box">
+<p><strong>Lemma (Algorithm)</strong> Given a symbolic polynomial <span class="math inline">\(p\)</span>, the term <code>runSMT (p &gt;&gt;= checkZeroSat) </code> returns either an SMT time out, prints out a solution if there exists <span class="math inline">\((a_i,k_i)\)</span> such that <span class="math inline">\(\sum_{i = 1}^n a_ix^{k_i} = 0\)</span> or “Failure” if there does not exist <span class="math inline">\((a_i,k_i)\)</span> such that <span class="math inline">\(\sum_{i = 1}^n a_ix^{k_i} = 0\)</span></p>
+</div>
+<h2 id="using-the-algorithm-on-our-problem">4. Using the algorithm on our problem</h2>
+Now we consider the symbolic polynomial
+<span class="math display">\[
+r(x) = p(x)p^\dagger(x) - q(x)q^\dagger(x)
+\]</span>
+where <span class="math inline">\(p(x) = x^n - 2x^m + 1, q(x) = \sum_{i = 1}^6 a_ix^{k_i}\)</span> with constraint list
+<span class="math display">\[
+\text{ls} = [
+	a_i = \pm 1, k_i &lt; k_{i+1}, n &gt; 2*m, k_1 = 0
+]
+\]</span>
+We may take the assumption <span class="math inline">\(n &gt; 2m\)</span> because, in the previous section we assumed that <span class="math inline">\(n &gt; m, n \neq 2m\)</span> and since <span class="math inline">\(p^\dagger_{m,n}(x) = p^\dagger_{n-m,n}(x)\)</span> without loss of generality, we may take <span class="math inline">\(n &gt; 2m\)</span>. We can take <span class="math inline">\(k_1 = 0\)</span> to be an assumption since <span class="math inline">\(x \nmid p(x)p^\dagger(x)\)</span>. So now, all we have to check is that if there are solutions in <span class="math inline">\((a_i,k_i),n,m\)</span> to
+<span class="math display">\[
+	r(x) = 0 
+\]</span>
+with constraint list <span class="math inline">\(\text{ls}\)</span>. Okay, let us try and see if <span class="math inline">\(r(x) = 0\)</span> is satisfiable
+<pre>
+<code>
+ghci> runSMT (r >>= checkZeroSat)
+SMTModel {modelObjectives = [], modelBindings = Nothing, modelAssocs = [("a0",1 :: Integer),("a1",-1 :: Integer),("a2",-1 :: Integer),("a3",-1:: Integer),("a4",1 :: Integer),("a5",1 :: Integer),("k0",0 :: Integer),("k1",1 :: Integer),("k2",4 :: Integer),("k3",5 :: Integer),("k4",6 ::Integer),("k5",7 :: Integer),("p0",0 :: Integer),("p1",2 :: Integer),("p2",7 :: Integer)], modelUIFuns = []}
+</code>
+</pre>
+Where <span class="math inline">\(p2 = n, p1 = m\)</span>. So that tells us that there is a solution to <span class="math inline">\(r(x) = 0\)</span>, namely when <span class="math inline">\(n = 7,m = 2\)</span>. This is because
+<span class="math display">\[
+	x^{7k} - 2x^{2k} + 1 = (x^k-1)(x^{3k}+x^{k}+1)(x^{3k}+x^{2k}-1)
+\]</span>
+and hence when <span class="math inline">\(7m = 2n\)</span>, <span class="math inline">\(p_{m,n}\)</span> is not uniquely positive. Now let us add the constraint <span class="math inline">\(7*m \neq 2*n\)</span> to the constraint list. Then we get
+<pre>
+<code>
+ghci> runSMT (rWithConstraint >>= checkZeroSat)
+"Failure"
+</code>
+</pre>
+So if <span class="math inline">\(7m \neq 2n\)</span> and <span class="math inline">\(n &gt; 2m\)</span> we have that <span class="math inline">\(p_{m,n}\)</span> is uniquely positive. By symmetry this gives us that if <span class="math inline">\(2m \neq n\)</span> and <span class="math inline">\(7m \neq 2n\)</span> and <span class="math inline">\(7m \neq 5n\)</span> then <span class="math inline">\(p_{m,n}\)</span> is uniqely positive. We thus deduce the following theorem
+<div class="thm-box">
+<strong>Theorem (Classifying <span class="math inline">\(p_{m,n}\)</span>)</strong> Let <span class="math inline">\(p_{a,b,c}(x) = x^a - 2x^b + x^c\)</span>, with <span class="math inline">\(a,b,c \in \mathbb{Z}\)</span> all being different. Let <span class="math inline">\([e_1,e_2,e_3]\)</span> be the list <span class="math inline">\([a,b,c]\)</span> sorted in descending order. Set <span class="math inline">\(n = e_1 - e_2\)</span>, <span class="math inline">\(m = e_1-e_3\)</span>. Then we have that <span class="math inline">\(p_{a,b,c}(x) = x^{e_3}(x^{\mathrm{gcd}(m,n)}-1)^\epsilon f\)</span> where<br />
+
+<ul>
+<li style="margin:20px 0px">
+Case <span class="math inline">\(p_{a,b,c}(x) \neq x^{e_3}(x^n-2x^m +1)\)</span>: <span class="math inline">\(\epsilon = 1\)</span>, <span class="math inline">\(f\)</span> is irreducible and antisymmetric
+</li>
+<li style="margin:20px 0px">
+Case <span class="math inline">\(p_{a,b,c}(x) = x^{e_3}(x^n-2x^m +1)\)</span>, <span class="math inline">\(m \neq 2n\)</span>, <span class="math inline">\(7m \neq 2n\)</span>, <span class="math inline">\(7m \neq 5n\)</span>: <span class="math inline">\(\epsilon = 1\)</span>, <span class="math inline">\(f\)</span> is irreducible and antisymmetric
+</li>
+<li style="margin:20px 0px">
+Case <span class="math inline">\(p_{a,b,c}(x) = x^{e_3}(x^n-2x^m +1)\)</span>, <span class="math inline">\(m \neq 2n\)</span>, <span class="math inline">\(7m = 2n\)</span>: <span class="math inline">\(\epsilon = 1\)</span>, <span class="math inline">\(f = (x^{3k}+x^k+1)(x^{3k}+x^{2k}-1)\)</span>
+</li>
+<li style="margin:20px 0px">
+Case <span class="math inline">\(p_{a,b,c}(x) = x^{e_3}(x^n-2x^m +1)\)</span>, <span class="math inline">\(m \neq 2n\)</span>, <span class="math inline">\(7m = 5n\)</span>: <span class="math inline">\(\epsilon = 1\)</span>, <span class="math inline">\(f = (x^{3k}-x^k-1)(x^{3k}+x^{2k}+1)\)</span>
+</li>
+<li style="margin:20px 0px">
+Case <span class="math inline">\(p_{a,b,c}(x) = x^{e_3}(x^n-2x^m +1)\)</span>, <span class="math inline">\(m = 2n\)</span>: <span class="math inline">\(\epsilon = 2\)</span>, <span class="math inline">\(f = 1\)</span>.
+</li>
+</ul>
+</div>
+<h2 id="using-the-result-to-finish-the-problem">5. Using the result to finish the problem</h2>
+Using the Main Theorem, one can now show that the following is true
+<div class="thm-box">
+<strong>Lemma (Non-symmetric parts are coprime)</strong>.
+Let <span class="math inline">\(n &gt; m &gt; 0\)</span>, <span class="math inline">\(k &gt; 0\)</span> and
+<ul>
+<li style="margin:20px 0px">
+<span class="math inline">\(\alpha_{m,n} = \frac{x^n - 2x^m + 1}{x^{\mathrm{gcd}(m,n)}-1}\)</span> where <span class="math inline">\(7m \neq 2n\)</span> or <span class="math inline">\(7m \neq 5m\)</span>
+</li>
+<li style="margin:20px 0px">
+<span class="math inline">\(\beta_{m,n} = \frac{- 2x^n + x^m + 1}{x^{\mathrm{gcd}(m,n)}-1}\)</span>
+</li>
+<li style="margin:20px 0px">
+<span class="math inline">\(\gamma_{m,n} = \frac{x^n + x^m - 2}{x^{\mathrm{gcd}(m,n)}-1}\)</span>
+</li>
+<li>
+<span class="math inline">\(\mu_k = x^{3k} + x^k + 1\)</span>
+</li>
+<li>
+<span class="math inline">\(\nu_k = x^{3k} + x^{2k} - 1\)</span>
+</li>
+<li style="margin:20px 0px">
+<span class="math inline">\(\mu_k^\dagger\)</span>
+</li>
+<li style="margin:20px 0px">
+<span class="math inline">\(\nu_k^\dagger\)</span>
+</li>
+</ul>
+<p>Then we have that all the polynomials above are distinct (upto multiplication by a unit) and irreducible over <span class="math inline">\(\mathbb{Z}\)</span></p>
+</div>
+<p>
+<strong>Proof.</strong> Unfortunately, the proof of this fact boils down to a lot of case checking. Using the exact same technique in the previous section, we can prove that <span class="math inline">\(\mu_k\)</span> and <span class="math inline">\(\nu_k\)</span> are irreducible. It is easy to see that any <span class="math inline">\(\beta_{m,n}\)</span> are distinct to polynomials from any other family beacuse it’s top coefficient is <span class="math inline">\(2\)</span>. Similarlyf or <span class="math inline">\(\gamma_{m,n}\)</span> since we have that the top coefficient of <span class="math inline">\(\gamma_{m,n}^\dagger\)</span> is <span class="math inline">\(2\)</span>. Therefore the annoying cases are checking that two polynomials from the same family are distinct and that <span class="math inline">\(\alpha_{m,n}\)</span> are distinct from the <span class="math inline">\(\mu_k, \nu_k, \mu_k^\dagger, \nu_k^\dagger\)</span>. We will use the algorithm to prove that these polynomials are not equal in any case. The code for the proofs are found in the same <a href="https://github.com/srivatsasrinivasmath/SymbolicPolynomialEquality/blob/master/lib/Blog.hs">repository</a>.
+</p>
+<span class="math inline">\(\blacksquare\)</span>
+<div class="thm-box">
+<p><strong>(Final Lemma)</strong>
+For any <span class="math inline">\(a,b,c,d\in \mathbb{N}_{\geq 0}\)</span> such that <span class="math inline">\(|\{a,b,c,d\}| = 4\)</span>, we have that
+<span class="math display">\[
+\mathrm{gcd}(p_{a,b,c}(x),p_{b,c,d}(x)) = \mathrm{gcd}(x^{e}(x^{\mathrm{gcd}(m_0,n_0)}-1)^{\epsilon_0},x^{f}(x^{\mathrm{gcd}(m_1,n_1)}-1)^{\epsilon_1})
+\]</span>
+where <span class="math inline">\([k_1,k_2,k_3],[l_1,l_2,l_3]\)</span> are the lists <span class="math inline">\([a,b,c],[b,c,d]\)</span> sorted in descending order, <span class="math inline">\(m_0 = k_1 - k_2, n_0 = k_1-k_3\)</span>, <span class="math inline">\(m_1 = l_1-l_2, n_1 = l_1-l_3\)</span>,
+<span class="math inline">\(e = k_3, f = l_3\)</span> and
+<span class="math display">\[
+\epsilon_i = 
+\begin{cases}
+1 &amp; \, \text{if $2m_i \neq n_i$} \\
+2 &amp; \, \text{if $2m_i = n_i$} 
+\end{cases}
+\]</span></p>
+</div>
+<p>
+<strong>Proof</strong>. We know that the gcd of two polynomials <span class="math inline">\(f,g \in \mathbb{Z}[x]\)</span> is the product of the gcd of their symettric parts and their antisymettric parts. Therefore, by the above Lemma (Non-symmetric parts are coprime) we know that the gcd of the antisymmetric parts of <span class="math inline">\(p_{a,b,c}\)</span> and <span class="math inline">\(p_{b,c,d}\)</span> is not <span class="math inline">\(1\)</span> if and only if we have that there exists a <span class="math inline">\(\gamma \in \mathbb{Z}\)</span> such that <span class="math inline">\([k_1 + \gamma,k_2 + \gamma,k_3 + \gamma] = [l_1,l_2,l_3]\)</span>. But since we know that both lists contain a sublist corresponding to the list <span class="math inline">\([b,c]\)</span> sorted in descending order, we must have that for some <span class="math inline">\(i,j \in \{1,2,3\}\)</span> that <span class="math inline">\([k_i + \gamma, k_j + \gamma] = [k_i,k_j]\)</span>. Thus <span class="math inline">\(\gamma = 0\)</span> and we deduce that for all <span class="math inline">\(i \in \{1,2,3\}\)</span> that <span class="math inline">\(k_i = l_i\)</span>. This gives us that <span class="math inline">\(|\{a,b,c,d\}| &lt; 4\)</span>, a contradiction
+</p>
+<span class="math inline">\(\blacksquare\)</span>
+<p>
+Thus by the above theorem we can finally conclude that if <span class="math inline">\((\xi^a)_{a \in \mathbb{Z}}\)</span> contains a four term arithmetic progresison, then it must be that <span class="math inline">\(x = 0\)</span> or that <span class="math inline">\(x\)</span> is a root of unity.
+</p>
+</div>
+</div>
+</div>
+        </body>
+    </div>
+</html>

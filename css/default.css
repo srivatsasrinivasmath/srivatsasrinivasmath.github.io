@@ -1,0 +1,35 @@
+:root {
+  --main-text-color: #09320D;
+}
+
+code{
+  white-space: pre-wrap
+}
+
+body{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f6fff7;
+  color: var(--main-text-color);
+  font-size: 20px;
+}
+
+a:link {
+  color: var(--main-text-color);
+}
+
+a:visited {
+  color: var(--main-text-color);
+}
+
+#content-wrapper {
+  width: 50%
+}
+
+@media (max-width: 991px){
+  #content-wrapper{
+    width: 90%
+  }
+}
